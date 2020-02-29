@@ -1,0 +1,81 @@
+
+service: demo-api
+
+provider:
+  name: aws
+  runtime: python3.8
+
+package:
+  individually: true
+
+functions:
+  hello:
+    handler: handler.jwt_auth
+    module: demo_authorizer
+    environment:
+      SECRET_KEY: ""
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  dockerizePip: true
+
+resources:
+  Resources:
+    ServerlessApiGateway:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: Serverless-ApiGateway-${opt:stage}
+    SharedApiGatewayAuthorizer:
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: jwt-{$opt:stage}-auth
+        AuthorizerResultTtlInSeconds: 300
+        IdentitySource: method.request.header.Authorization
+        AuthorizeUri:
+          Fn::Join:
+            - ''
+            - 
+              - 'arn:aws:apigateway:'
+              - Ref: 'AWS::Region'
+              - ':lambda:path/2015-03-31/functions'
+              - Fn::GetAtt:
+                - JwtUnderscoreauthLambdaFunction
+                - Arn
+              - /invocations
+        RestApiId: 
+          Ref: ServerlessApiGatway
+        Type: TOKEN
+    AuthLambdaPermissionApiGateway:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName:
+          Fn::GetAtt:
+            - JwtUnderscoreauthLambdaFunction
+            - Arn
+        Action: 'lambda:InvokeFunction'
+        Principal:
+          Fn::Join:
+            - ''
+            -
+              - apigateway.
+              - Ref: 'AWS::URLSuffix'
+  Outputs:
+    apiGatewayRestApiId:
+      Value:
+        Ref: ServerlessApiGateway
+      Export:
+        Name: ServerlessApiGateway-${opt:stage}-RestApiId
+    apiGatewayRestApiRootResourceId:
+      Value:
+        Fn::GetAtt:
+          - ServerlessApiGateway
+          - RootResourceId
+      Export:
+        Name: ServerlessApiGateway-${opt:stage}-RootResourceId
+    apiGatewayAuthorizerId:
+      Value:
+        Ref: SharedApiGatewayAuthorizer
+      Export:
+        Name: ServerlessApiGateway-${opt:stage}-AuthorizerId
