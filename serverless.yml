@@ -9,7 +9,7 @@ package:
   individually: true
 
 functions:
-  hello:
+  jwt_auth:
     handler: handler.jwt_auth
     module: demo_authorizer
     environment:
@@ -30,22 +30,22 @@ resources:
     SharedApiGatewayAuthorizer:
       Type: AWS::ApiGateway::Authorizer
       Properties:
-        Name: jwt-{$opt:stage}-auth
+        Name: jwt-${opt:stage}-auth
         AuthorizerResultTtlInSeconds: 300
         IdentitySource: method.request.header.Authorization
-        AuthorizeUri:
+        AuthorizerUri:
           Fn::Join:
             - ''
             - 
               - 'arn:aws:apigateway:'
               - Ref: 'AWS::Region'
-              - ':lambda:path/2015-03-31/functions'
+              - ':lambda:path/2015-03-31/functions/'
               - Fn::GetAtt:
                 - JwtUnderscoreauthLambdaFunction
                 - Arn
               - /invocations
         RestApiId: 
-          Ref: ServerlessApiGatway
+          Ref: ServerlessApiGateway
         Type: TOKEN
     AuthLambdaPermissionApiGateway:
       Type: AWS::Lambda::Permission
